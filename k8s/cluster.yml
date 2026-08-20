@@ -1,0 +1,17 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: microservices
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+      - containerPort: 443
+        hostPort: 443
+      - containerPort: 30001
+        hostPort: 8081
+      - containerPort: 30002
+        hostPort: 8082
+      - containerPort: 30003
+        hostPort: 8083
+  - role: worker

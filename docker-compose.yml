@@ -1,0 +1,34 @@
+services:
+  java-service:
+    build: ./java-service
+    ports:
+      - "${JAVA_PORT:-8081}:${JAVA_INTERNAL_PORT:-8080}"
+    environment:
+      NODE_SERVICE_URL: ${NODE_SERVICE_URL:-http://node-service:3000}
+      PYTHON_SERVICE_URL: ${PYTHON_SERVICE_URL:-http://python-service:5000}
+    networks:
+      - micro-net
+
+  node-service:
+    build: ./node-service
+    ports:
+      - "${NODE_PORT:-3001}:${NODE_INTERNAL_PORT:-3000}"
+    environment:
+      JAVA_SERVICE_URL: ${JAVA_SERVICE_URL:-http://java-service:8080}
+      PYTHON_SERVICE_URL: ${PYTHON_SERVICE_URL:-http://python-service:5000}
+    networks:
+      - micro-net
+
+  python-service:
+    build: ./python-service
+    ports:
+      - "${PYTHON_PORT:-5001}:${PYTHON_INTERNAL_PORT:-5000}"
+    environment:
+      JAVA_SERVICE_URL: ${JAVA_SERVICE_URL:-http://java-service:8080}
+      NODE_SERVICE_URL: ${NODE_SERVICE_URL:-http://node-service:3000}
+    networks:
+      - micro-net
+
+networks:
+  micro-net:
+    driver: bridge

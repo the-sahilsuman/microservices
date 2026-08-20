@@ -1,0 +1,17 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: microservices-pvc
+  namespace: microservices
+
+spec:
+  selector:
+    matchLabels:
+      type: ssd
+  accessModes:
+    - ReadWriteMany
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 200Mi
+

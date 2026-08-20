@@ -1,0 +1,30 @@
+# Environment
+.env
+!.env.example
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Java / Maven
+target/
+*.class
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.iml
+
+# OS
+.DS_Store
+
+# Logs
+*.log

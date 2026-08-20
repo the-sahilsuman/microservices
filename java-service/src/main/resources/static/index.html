@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Java Service Dashboard</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        button { margin: 10px; padding: 8px 16px; font-size: 16px; cursor: pointer; }
+        .result { margin: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; min-height: 50px; }
+        .connected { background: #d4edda; color: #155724; }
+        .not-connected { background: #f8d7da; color: #721c24; }
+        h2 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>🟢 Java Service (Spring Boot)</h1>
+    <!-- <p>This service runs on port 8080</p> -->
+
+    <h2>Connectivity Checks</h2>
+    <button id="btnNode">Check Java → Node.js</button>
+    <div id="resultNode" class="result">⚪ Not checked yet</div>
+
+    <button id="btnPython">Check Java → Python</button>
+    <div id="resultPython" class="result">⚪ Not checked yet</div>
+
+    <script>
+        async function check(target, resultDivId) {
+            const div = document.getElementById(resultDivId);
+            div.innerHTML = "⏳ Checking...";
+            div.className = "result";
+            try {
+                const response = await fetch(`/check/${target}`);
+                const data = await response.json();
+                if (data.status === "Connected") {
+                    div.innerHTML = `✅ Connected to ${data.target}<br>${data.message}`;
+                    div.className = "result connected";
+                } else {
+                    div.innerHTML = `❌ Not Connected to ${data.target}<br>${data.message}`;
+                    div.className = "result not-connected";
+                }
+            } catch (err) {
+                div.innerHTML = `❌ Error: ${err.message}`;
+                div.className = "result not-connected";
+            }
+        }
+
+        document.getElementById("btnNode").onclick = () => check("node", "resultNode");
+        document.getElementById("btnPython").onclick = () => check("python", "resultPython");
+    </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+kind: VerticalPodAutoscaler
+apiVersion: autoscaling.k8s.io/v1
+metadata:
+  name: vpa-nodejs
+  namespace: microservices
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: service-nodejs
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+      - containerName: "*"
+        controlledResources: ["memory"]
+
+---
+
+kind: VerticalPodAutoscaler
+apiVersion: autoscaling.k8s.io/v1
+metadata:
+  name: vpa-java
+  namespace: microservices
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: service-java
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+      - containerName: "*"
+        controlledResources: ["memory"]
+
+---
+
+kind: VerticalPodAutoscaler
+apiVersion: autoscaling.k8s.io/v1
+metadata:
+  name: vpa-python
+  namespace: microservices
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: service-python
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+      - containerName: "*"
+        controlledResources: ["memory"]

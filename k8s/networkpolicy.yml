@@ -1,0 +1,165 @@
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: np-nodejs
+  namespace: microservices
+spec:
+  podSelector:
+    matchLabels:
+      app: nodejs
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: java
+        - podSelector:
+            matchLabels:
+              app: python
+      ports:
+        - protocol: TCP
+          port: 8081
+    - ports:
+        - protocol: TCP
+          port: 8081
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: java
+      ports:
+        - protocol: TCP
+          port: 8082
+    - to:
+        - podSelector:
+            matchLabels:
+              app: python
+      ports:
+        - protocol: TCP
+          port: 8083
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443 
+
+
+--- 
+
+
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: np-java
+  namespace: microservices
+spec:
+  podSelector:
+    matchLabels:
+      app: java
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: nodejs
+        - podSelector:
+            matchLabels:
+              app: python
+      ports:
+        - protocol: TCP
+          port: 8082
+    - ports:
+        - protocol: TCP
+          port: 8082
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: nodejs
+      ports:
+        - protocol: TCP
+          port: 8081
+    - to:
+        - podSelector:
+            matchLabels:
+              app: python
+      ports:
+        - protocol: TCP
+          port: 8083
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443
+
+
+
+
+---
+
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: np-python
+  namespace: microservices
+spec:
+  podSelector:
+    matchLabels:
+      app: python
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: java
+        - podSelector:
+            matchLabels:
+              app: nodejs
+      ports:
+        - protocol: TCP
+          port: 8083
+    - ports:
+        - protocol: TCP
+          port: 8083
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: java
+      ports:
+        - protocol: TCP
+          port: 8082
+    - to:
+        - podSelector:
+            matchLabels:
+              app: nodejs
+      ports:
+        - protocol: TCP
+          port: 8081
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443
+

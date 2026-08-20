@@ -1,0 +1,119 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: deployment-nodejs
+  namespace: microservices
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs
+  template:
+    metadata:
+      labels:
+        app: nodejs
+    spec:
+      containers:
+        - name: nodejs
+          image: thesahilsuman/nodejs:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: configmap-nodejs
+          volumeMounts:
+            - name: pvc-nodejs
+              mountPath: /app-data
+              subPath: nodejs
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+      volumes:
+        - name: pvc-nodejs
+          persistentVolumeClaim:
+            claimName: microservices-pvc
+
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: deployment-java
+  namespace: microservices
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: java
+  template:
+    metadata:
+      labels:
+        app: java
+    spec:
+      containers:
+        - name: java
+          image: thesahilsuman/java:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+          envFrom:
+            - configMapRef:
+                name: configmap-java
+          volumeMounts:
+            - name: pvc-java
+              mountPath: /app-data
+              subPath: java
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+      volumes:
+        - name: pvc-java
+          persistentVolumeClaim:
+            claimName: microservices-pvc
+
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: deployment-python
+  namespace: microservices
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: python
+  template:
+    metadata:
+      labels:
+        app: python
+    spec:
+      containers:
+        - name: python
+          image: thesahilsuman/python:v2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8083
+          envFrom:
+            - configMapRef:
+                name: configmap-python
+          volumeMounts:
+            - name: pvc-python
+              mountPath: /app-data
+              subPath: python
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+      volumes:
+        - name: pvc-python
+          persistentVolumeClaim:
+            claimName: microservices-pvc
