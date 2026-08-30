@@ -1,384 +1,93 @@
-# Microservices Kubernetes Project
+# 🚀 Polyglot Microservices Deployment on Kubernetes
 
-A hands-on microservices application demonstrating **Node.js, Java Spring Boot, and Python Flask** services communicating with each other and deployed with **Docker Compose and Kubernetes**.
+A **polyglot microservices architecture** deployed on **Kubernetes using Kind**, featuring services built with **Node.js, Java, and Python**.
 
-## Architecture
+This project demonstrates practical concepts of:
+
+* 🐳 Docker
+* ☸️ Kubernetes
+* 🚀 Kind (Kubernetes in Docker)
+* ☁️ AWS EC2
+* 🌐 NGINX Ingress
+* 🔄 Service Discovery
+* 📦 Persistent Volumes
+* 📈 Horizontal Pod Autoscaling
+* 📊 Vertical Pod Autoscaling
+* 🔐 Network Policies
+* ⚙️ Automated Infrastructure Setup using Shell Scripts
+
+---
+
+# 📌 Project Overview
+
+This project demonstrates how multiple microservices written in different programming languages can communicate and run together inside a Kubernetes cluster.
+
+The application contains three independent backend services:
+
+| Service            | Technology         | Application Port |
+| ------------------ | ------------------ | ---------------: |
+| 🟢 Node.js Service | Node.js            |             8081 |
+| ☕ Java Service     | Spring Boot / Java |             8082 |
+| 🐍 Python Service  | Python / Flask     |             8083 |
+
+Each service runs inside its own Docker container and is deployed independently using Kubernetes.
+
+---
+
+# 🏗️ Architecture
 
 ```text
-                         ┌─────────────────────┐
-                         │      Ingress NGINX   │
-                         │  thesahilsuman.online│
-                         └──────────┬──────────┘
-                                    │
-              ┌─────────────────────┼─────────────────────┐
-              │                     │                     │
-        /nodejs                /java                 /python
-              │                     │                     │
-      ┌───────▼───────┐     ┌───────▼───────┐     ┌──────▼────────┐
-      │ Node.js       │     │ Java           │     │ Python Flask  │
-      │ Express       │◄───►│ Spring Boot    │◄───►│ Flask         │
-      │ :8081         │     │ :8082         │     │ :8083         │
-      └───────┬───────┘     └───────┬───────┘     └──────┬────────┘
-              │                     │                     │
-              └─────────────────────┼─────────────────────┘
-                                    │
-                         Kubernetes Service DNS
-                                    │
-                         ┌──────────▼──────────┐
-                         │ Persistent Storage  │
-                         │ PV → PVC → /app-data│
-                         └─────────────────────┘
-
-        HPA → CPU-based horizontal scaling
-        VPA → memory-based vertical recommendations/updates
-        NetworkPolicy → service-to-service traffic control
+                         Internet
+                            │
+                            ▼
+                      AWS EC2 Instance
+                            │
+                    Port 80 / Port 443
+                            │
+                            ▼
+                     Kind Kubernetes Cluster
+                            │
+                            ▼
+                 NGINX Ingress Controller
+                            │
+             ┌──────────────┼──────────────┐
+             │              │              │
+             ▼              ▼              ▼
+       Node.js Service   Java Service   Python Service
+             │              │              │
+             ▼              ▼              ▼
+        Node.js Pod      Java Pod       Python Pod
 ```
 
-## Services
-
-| Service | Technology | Local Compose | Kubernetes |
-|---|---|---:|---:|
-| Node.js | Express + Axios | `localhost:3001` | `8081` |
-| Java | Spring Boot 3 + Java 17 | `localhost:8081` | `8082` |
-| Python | Flask + Requests | `localhost:5001` | `8083` |
-
-Each service exposes:
-
-- `GET /health` — health check
-- `GET /check/<target>` — checks connectivity to another service
-- `/` — simple browser dashboard
-
-### Connectivity matrix
-
-| From | Can check |
-|---|---|
-| Node.js | Java, Python |
-| Java | Node.js, Python |
-| Python | Node.js, Java |
-
 ---
 
-# 1. Prerequisites
+# 🔄 Internal Service Communication
 
-For local Docker Compose:
-
-- Docker Desktop / Docker Engine
-- Docker Compose
-
-For Kubernetes:
-
-- Docker
-- `kubectl`
-- Kind
-- NGINX Ingress Controller
-- Metrics Server for HPA
-- VPA components for VPA resources
-
-For Java development/building:
-
-- JDK 17
-- Maven (optional if building through Docker)
-
-For Python development:
-
-- Python 3.10+
-
-For Node.js development:
-
-- Node.js 18+
-
----
-
-# 2. Project Structure
+The services communicate using Kubernetes DNS and Service Discovery.
 
 ```text
-microservices-master/
-├── README.md
-├── .env
-├── .env.example
-├── .gitignore
-├── docker-compose.yml
-│
-├── node-service/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── app.js
-│   └── public/
-│       └── index.html
-│
-├── java-service/
-│   ├── Dockerfile
-│   ├── pom.xml
-│   └── src/
-│       └── main/
-│           ├── java/com/example/javaservice/
-│           └── resources/
-│
-├── python-service/
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   ├── app.py
-│   └── templates/
-│       └── index.html
-│
-└── k8s/
-    ├── cluster.yml
-    ├── namespace.yml
-    ├── configmap.yml
-    ├── deployment.yml
-    ├── service.yml
-    ├── ingress.yml
-    ├── pv.yml
-    ├── pvc.yml
-    ├── hpa.yml
-    ├── vpa.yml
-    └── networkpolicy.yml
+                 Kubernetes Cluster
+
+        ┌───────────────────────────────┐
+        │                               │
+        │        Node.js Service        │
+        │             │                 │
+        │             │                 │
+        │      ┌──────▼──────┐          │
+        │      │             │          │
+        │      ▼             ▼          │
+        │ Java Service   Python Service │
+        │                               │
+        └───────────────────────────────┘
 ```
 
----
-
-# 3. Environment Variables
-
-The project uses environment variables instead of hard-coding service URLs.
-
-Copy `.env.example` to `.env` when starting from a fresh clone:
-
-```bash
-cp .env.example .env
-```
-
-The included `.env` contains only local development values and **no secrets**.
-
-Important variables:
-
-```env
-NODE_PORT=3001
-JAVA_PORT=8081
-PYTHON_PORT=5001
-
-NODE_INTERNAL_PORT=3000
-JAVA_INTERNAL_PORT=8080
-PYTHON_INTERNAL_PORT=5000
-
-NODE_SERVICE_URL=http://node-service:3000
-JAVA_SERVICE_URL=http://java-service:8080
-PYTHON_SERVICE_URL=http://python-service:5000
-```
-
-For Kubernetes, service DNS names are configured through `k8s/configmap.yml`.
-
----
-
-# 4. Run with Docker Compose
-
-Build and start all services:
-
-```bash
-docker compose up --build
-```
-
-Run in detached mode:
-
-```bash
-docker compose up --build -d
-```
-
-Check containers:
-
-```bash
-docker compose ps
-```
-
-View logs:
-
-```bash
-docker compose logs -f
-docker compose logs -f node-service
-docker compose logs -f java-service
-docker compose logs -f python-service
-```
-
-Stop:
-
-```bash
-docker compose down
-```
-
-## Browser URLs
+Instead of communicating using Pod IP addresses:
 
 ```text
-Node.js  → http://localhost:3001
-Java     → http://localhost:8081
-Python   → http://localhost:5001
+http://10.244.x.x
 ```
 
-## Health checks
-
-```bash
-curl http://localhost:3001/health
-curl http://localhost:8081/health
-curl http://localhost:5001/health
-```
-
-Expected response:
-
-```text
-Service is running
-```
-
-## Connectivity examples
-
-Node → Java:
-
-```bash
-curl http://localhost:3001/check/java
-```
-
-Node → Python:
-
-```bash
-curl http://localhost:3001/check/python
-```
-
-Java → Node:
-
-```bash
-curl http://localhost:8081/check/node
-```
-
-Java → Python:
-
-```bash
-curl http://localhost:8081/check/python
-```
-
-Python → Node:
-
-```bash
-curl http://localhost:5001/check/node
-```
-
-Python → Java:
-
-```bash
-curl http://localhost:5001/check/java
-```
-
----
-
-# 5. Build Docker Images Manually
-
-Node.js:
-
-```bash
-docker build -t microservices-nodejs ./node-service
-```
-
-Java:
-
-```bash
-docker build -t microservices-java ./java-service
-```
-
-Python:
-
-```bash
-docker build -t microservices-python ./python-service
-```
-
-Run a container manually only when needed; Docker Compose is the recommended local workflow.
-
----
-
-# 6. Kubernetes with Kind
-
-Create the Kind cluster:
-
-```bash
-kind create cluster --config k8s/cluster.yml
-```
-
-Verify:
-
-```bash
-kubectl cluster-info
-kubectl get nodes
-```
-
-Create namespace:
-
-```bash
-kubectl apply -f k8s/namespace.yml
-```
-
-## Important: container images
-
-The Kubernetes deployments currently reference:
-
-```text
-thesahilsuman/nodejs:v1
-thesahilsuman/java:v1
-thesahilsuman/python:v2
-```
-
-If you use different Docker Hub images, update `k8s/deployment.yml`.
-
-For a local Kind cluster, either load local images:
-
-```bash
-kind load docker-image microservices-nodejs
-kind load docker-image microservices-java
-kind load docker-image microservices-python
-```
-
-or push/tag images to a registry and change the deployment manifests.
-
----
-
-# 7. Deploy Kubernetes Resources
-
-Recommended order:
-
-```bash
-kubectl apply -f k8s/namespace.yml
-kubectl apply -f k8s/configmap.yml
-kubectl apply -f k8s/pv.yml
-kubectl apply -f k8s/pvc.yml
-kubectl apply -f k8s/deployment.yml
-kubectl apply -f k8s/service.yml
-kubectl apply -f k8s/networkpolicy.yml
-kubectl apply -f k8s/ingress.yml
-```
-
-Check resources:
-
-```bash
-kubectl get all -n microservices
-kubectl get pvc -n microservices
-kubectl get pv
-kubectl get ingress -n microservices
-```
-
-Check pods:
-
-```bash
-kubectl get pods -n microservices -o wide
-```
-
-Debug a pod:
-
-```bash
-kubectl describe pod <pod-name> -n microservices
-kubectl logs <pod-name> -n microservices
-```
-
----
-
-# 8. Kubernetes Service Discovery
-
-Inside the `microservices` namespace, Kubernetes DNS provides service discovery.
-
-Examples:
+the services communicate using Kubernetes service names:
 
 ```text
 http://service-nodejs
@@ -386,378 +95,713 @@ http://service-java
 http://service-python
 ```
 
-The ConfigMaps configure the applications to use these names.
-
-This means applications do not need Pod IP addresses. If a Pod is recreated, the Service continues to provide a stable network endpoint.
+This provides built-in Kubernetes Service Discovery.
 
 ---
 
-# 9. Ingress
+# 🛠️ Tech Stack
 
-The Ingress routes:
+## Application Technologies
 
-```text
-thesahilsuman.online/nodejs → service-nodejs
-thesahilsuman.online/java   → service-java
-thesahilsuman.online/python → service-python
+* Node.js
+* Java
+* Spring Boot
+* Python
+* Flask
 
-java.thesahilsuman.online/ → service-java
-```
+## DevOps & Cloud
 
-Before using the hostnames, update `k8s/ingress.yml` with your own domain.
+* Docker
+* Kubernetes
+* Kind
+* kubectl
+* AWS EC2
+* NGINX Ingress Controller
+* Shell Scripting
 
-For local testing, you can add host entries to `/etc/hosts`, for example:
+## Kubernetes Features
 
-```text
-127.0.0.1 thesahilsuman.online
-127.0.0.1 java.thesahilsuman.online
-```
-
-You also need the NGINX Ingress Controller installed in the Kind cluster.
-
----
-
-# 10. Persistent Volume
-
-The project includes:
-
-```text
-PersistentVolume → PersistentVolumeClaim → Pod
-```
-
-The PV uses:
-
-```text
-hostPath: /microservices-pv/
-```
-
-and provides `200Mi` of storage.
-
-The PVC is mounted by each deployment at:
-
-```text
-/app-data
-```
-
-with service-specific subdirectories:
-
-```text
-/app-data/nodejs
-/app-data/java
-/app-data/python
-```
-
-### Important limitation
-
-`hostPath` is mainly appropriate for a local/single-node learning environment. It is **not a production-grade shared storage solution** for a multi-node Kubernetes cluster.
-
-For production, use an appropriate storage class and CSI-backed storage such as EBS/EFS or another managed storage system.
+* Namespace
+* Deployment
+* Service
+* ConfigMap
+* PersistentVolume
+* PersistentVolumeClaim
+* Ingress
+* Horizontal Pod Autoscaler
+* Vertical Pod Autoscaler
+* NetworkPolicy
 
 ---
 
-# 11. HPA
-
-The Horizontal Pod Autoscaler scales deployments based on CPU utilization.
-
-Current configuration:
+# 📂 Project Structure
 
 ```text
-Minimum replicas: 1
-Maximum replicas: 3
-Target CPU: 50%
-```
+microservices/
 
-Apply:
-
-```bash
-kubectl apply -f k8s/hpa.yml
-```
-
-Check:
-
-```bash
-kubectl get hpa -n microservices
-```
-
-For HPA metrics to work, install/configure Metrics Server.
-
-Inspect:
-
-```bash
-kubectl top pods -n microservices
-kubectl top nodes
+├── install.sh
+├── config.sh
+│
+├── node-service/
+│   ├── Dockerfile
+│   └── application files
+│
+├── java-service/
+│   ├── Dockerfile
+│   └── Spring Boot application
+│
+├── python-service/
+│   ├── Dockerfile
+│   └── Flask application
+│
+└── k8s/
+    │
+    ├── cluster.yml
+    ├── namespace.yml
+    ├── configmap.yml
+    ├── deployment.yml
+    ├── service.yml
+    ├── pv.yml
+    ├── pvc.yml
+    ├── ingress.yml
+    ├── networkpolicy.yml
+    ├── hpa.yml
+    └── vpa.yml
 ```
 
 ---
 
-# 12. VPA
+# ⚡ Automated Deployment
 
-The project includes VPA manifests for all three services.
+The project provides automation scripts for setting up the complete environment.
 
-VPA requires the Kubernetes Vertical Pod Autoscaler components/CRDs to be installed first.
-
-Apply:
+## Step 1: Clone Repository
 
 ```bash
-kubectl apply -f k8s/vpa.yml
+git clone https://github.com/the-sahilsuman/microservices.git
+
+cd microservices
 ```
-
-Check:
-
-```bash
-kubectl get vpa -n microservices
-```
-
-VPA can recommend or update resource requests depending on its configuration.
-
-Do not use HPA and VPA on the same CPU metric without understanding their interaction. In production, define a clear scaling strategy.
 
 ---
 
-# 13. Network Policies
+# 🔧 Step 2: Install Required Tools
 
-Network policies restrict traffic between services.
+Make the scripts executable:
 
-For example:
+```bash
+chmod +x install.sh config.sh
+```
+
+Run:
+
+```bash
+./install.sh
+```
+
+The installation script automatically installs:
 
 ```text
-Node.js ↔ Java
-Node.js ↔ Python
-Java   ↔ Python
+Docker
+   ↓
+kubectl
+   ↓
+Kind
+   ↓
+Required System Dependencies
 ```
 
-DNS and HTTP/HTTPS egress are allowed by the policies.
-
-Check:
+After installation:
 
 ```bash
-kubectl get networkpolicy -n microservices
+newgrp docker
 ```
 
-NetworkPolicy enforcement depends on the cluster's CNI/network plugin. Kind setups that do not enforce NetworkPolicy will not demonstrate the restrictions even if the manifests exist.
+Verify:
+
+```bash
+docker --version
+kubectl version --client
+kind version
+```
 
 ---
 
-# 14. Troubleshooting
+# ☸️ Step 3: Deploy the Kubernetes Cluster
 
-### Pod is ImagePullBackOff
-
-```bash
-kubectl describe pod <pod-name> -n microservices
-```
-
-Check that the image name/tag exists and that Kind can access it.
-
-For a local image:
+Run:
 
 ```bash
-kind load docker-image <image-name>:<tag>
+./config.sh
 ```
 
-### Pod is CrashLoopBackOff
+The configuration script automatically performs the following tasks:
 
-```bash
-kubectl logs <pod-name> -n microservices
-kubectl describe pod <pod-name> -n microservices
+```text
+Check Required Tools
+        │
+        ▼
+Check Docker
+        │
+        ▼
+Create Kind Cluster
+        │
+        ▼
+Wait for Kubernetes Nodes
+        │
+        ▼
+Install Metrics Server
+        │
+        ▼
+Install NGINX Ingress Controller
+        │
+        ▼
+Create Namespace
+        │
+        ▼
+Apply ConfigMap
+        │
+        ▼
+Create Persistent Volume
+        │
+        ▼
+Create Persistent Volume Claim
+        │
+        ▼
+Deploy Node.js Service
+        │
+        ▼
+Deploy Java Service
+        │
+        ▼
+Deploy Python Service
+        │
+        ▼
+Create Kubernetes Services
+        │
+        ▼
+Apply Network Policies
+        │
+        ▼
+Configure Ingress
+        │
+        ▼
+Configure HPA
+        │
+        ▼
+Configure VPA
+        │
+        ▼
+Verify Deployment
 ```
-
-Check environment variables, ports, startup commands, and application logs.
-
-### Service cannot reach another service
-
-Check:
-
-```bash
-kubectl get svc -n microservices
-kubectl get endpoints -n microservices
-```
-
-Verify the selector matches Pod labels:
-
-```yaml
-selector:
-  app: nodejs
-```
-
-and:
-
-```yaml
-labels:
-  app: nodejs
-```
-
-### HPA shows unknown metrics
-
-Check Metrics Server:
-
-```bash
-kubectl get pods -A | grep metrics
-kubectl top pods -n microservices
-```
-
-### Ingress does not work
-
-Check:
-
-```bash
-kubectl get ingress -n microservices
-kubectl describe ingress microservices-ingress -n microservices
-```
-
-Also verify the NGINX Ingress Controller is running.
-
-### NetworkPolicy appears ineffective
-
-Confirm that the Kubernetes network plugin supports and enforces NetworkPolicy.
 
 ---
 
-# 15. Useful Kubernetes Commands
+# 📦 Kubernetes Resources
+
+## Namespace
+
+All microservices are deployed inside a dedicated namespace:
+
+```bash
+kubectl get namespace
+```
+
+Check application resources:
+
+```bash
+kubectl get all -n microservices
+```
+
+---
+
+# 🚀 Deployments
+
+Each application runs independently inside a Kubernetes Deployment.
+
+```text
+Deployment
+     │
+     ▼
+ReplicaSet
+     │
+     ▼
+Pods
+```
+
+Check deployments:
+
+```bash
+kubectl get deployments -n microservices
+```
+
+Check pods:
 
 ```bash
 kubectl get pods -n microservices
+```
+
+Detailed information:
+
+```bash
+kubectl get pods -n microservices -o wide
+```
+
+---
+
+# 🌐 Kubernetes Services
+
+Kubernetes Services provide stable networking for the microservices.
+
+```text
+Node.js Pod
+     │
+     ▼
+service-nodejs
+
+Java Pod
+     │
+     ▼
+service-java
+
+Python Pod
+     │
+     ▼
+service-python
+```
+
+Check services:
+
+```bash
 kubectl get svc -n microservices
-kubectl get deployments -n microservices
-kubectl get configmaps -n microservices
-kubectl get pvc -n microservices
-kubectl get pv
+```
+
+---
+
+# 🔍 Service Discovery
+
+Kubernetes automatically provides DNS-based service discovery.
+
+Example:
+
+```text
+Node.js
+   │
+   ├────► service-java
+   │
+   └────► service-python
+```
+
+Applications do not need to know Pod IP addresses.
+
+If a Pod is recreated:
+
+```text
+Old Pod
+   │
+   ▼
+Deleted
+
+        Kubernetes
+
+            │
+            ▼
+
+       New Pod Created
+       New Pod IP
+```
+
+The Kubernetes Service automatically routes traffic to the new Pod.
+
+---
+
+# 🌍 NGINX Ingress
+
+NGINX Ingress provides external access to the microservices.
+
+```text
+Internet
+   │
+   ▼
+NGINX Ingress
+   │
+   ├────────► Node.js Service
+   │
+   ├────────► Java Service
+   │
+   └────────► Python Service
+```
+
+Check ingress:
+
+```bash
 kubectl get ingress -n microservices
+```
+
+Describe ingress:
+
+```bash
+kubectl describe ingress -n microservices
+```
+
+---
+
+# 📦 Persistent Storage
+
+The project uses Kubernetes persistent storage.
+
+Architecture:
+
+```text
+Application Pod
+      │
+      ▼
+PersistentVolumeClaim
+      │
+      ▼
+PersistentVolume
+      │
+      ▼
+Host Storage
+```
+
+Check Persistent Volumes:
+
+```bash
+kubectl get pv
+```
+
+Check Persistent Volume Claims:
+
+```bash
+kubectl get pvc -n microservices
+```
+
+---
+
+# 📈 Horizontal Pod Autoscaler
+
+Horizontal Pod Autoscaler automatically increases or decreases the number of Pods based on resource utilization.
+
+```text
+High Traffic
+     │
+     ▼
+High CPU Usage
+     │
+     ▼
+HPA
+     │
+     ▼
+More Pods
+```
+
+Check HPA:
+
+```bash
 kubectl get hpa -n microservices
+```
+
+Check metrics:
+
+```bash
+kubectl top pods -n microservices
+```
+
+---
+
+# 📊 Vertical Pod Autoscaler
+
+Vertical Pod Autoscaler adjusts resource requests and limits for containers.
+
+```text
+Application
+     │
+     ▼
+Resource Usage Analysis
+     │
+     ▼
+VPA Recommendation
+     │
+     ▼
+Better CPU / Memory Allocation
+```
+
+Check VPA:
+
+```bash
 kubectl get vpa -n microservices
+```
+
+---
+
+# 🔐 Network Policies
+
+Network Policies control communication between Pods.
+
+```text
+Node.js
+   │
+   ├──── Allowed Communication ────► Java
+   │
+   └──── Allowed Communication ────► Python
+```
+
+Network Policies help implement:
+
+* Network segmentation
+* Controlled communication
+* Pod-level security
+* Zero-trust networking concepts
+
+Check Network Policies:
+
+```bash
 kubectl get networkpolicy -n microservices
 ```
 
-Restart deployments:
+---
+
+# 📊 Monitoring Kubernetes Resources
+
+Check all resources:
 
 ```bash
-kubectl rollout restart deployment/deployment-nodejs -n microservices
-kubectl rollout restart deployment/deployment-java -n microservices
-kubectl rollout restart deployment/deployment-python -n microservices
+kubectl get all -n microservices
 ```
 
-Check rollout:
+Check nodes:
 
 ```bash
-kubectl rollout status deployment/deployment-nodejs -n microservices
-kubectl rollout status deployment/deployment-java -n microservices
-kubectl rollout status deployment/deployment-python -n microservices
+kubectl get nodes
 ```
 
-Delete the complete namespace:
+Check resource usage:
+
+```bash
+kubectl top nodes
+```
+
+Check Pod resource usage:
+
+```bash
+kubectl top pods -n microservices
+```
+
+---
+
+# 🔎 Troubleshooting
+
+## Check Pod Status
+
+```bash
+kubectl get pods -n microservices
+```
+
+---
+
+## View Pod Logs
+
+```bash
+kubectl logs <pod-name> -n microservices
+```
+
+Example:
+
+```bash
+kubectl logs deployment/deployment-nodejs -n microservices
+```
+
+---
+
+## Describe Pod
+
+```bash
+kubectl describe pod <pod-name> -n microservices
+```
+
+---
+
+## Check Events
+
+```bash
+kubectl get events -n microservices --sort-by=.metadata.creationTimestamp
+```
+
+---
+
+## Check Services
+
+```bash
+kubectl get svc -n microservices
+```
+
+---
+
+## Check Ingress Controller
+
+```bash
+kubectl get pods -n ingress-nginx
+```
+
+---
+
+# 🧹 Cleanup
+
+To delete the application resources:
 
 ```bash
 kubectl delete namespace microservices
 ```
 
----
-
-# 16. Technology Stack
-
-- Node.js
-- Express
-- Axios
-- Python
-- Flask
-- Requests
-- Java 17
-- Spring Boot
-- Maven
-- Docker
-- Docker Compose
-- Kubernetes
-- Kind
-- Kubernetes Services
-- ConfigMaps
-- Ingress NGINX
-- PersistentVolume / PersistentVolumeClaim
-- HPA
-- VPA
-- NetworkPolicy
-
----
-
-# 17. What This Project Demonstrates
-
-This project is useful as a DevOps/Kubernetes portfolio project because it demonstrates:
-
-1. Multi-language microservices architecture.
-2. Containerization with Docker.
-3. Inter-service communication.
-4. Docker Compose networking.
-5. Kubernetes Deployments and Services.
-6. Kubernetes internal DNS/service discovery.
-7. Configuration through ConfigMaps and environment variables.
-8. Persistent storage with PV/PVC.
-9. Ingress-based HTTP routing.
-10. CPU-based horizontal autoscaling.
-11. Vertical pod autoscaling configuration.
-12. Network isolation with NetworkPolicy.
-13. Health checks and basic service observability.
-14. Troubleshooting of container and Kubernetes workloads.
-
----
-
-# 18. Production Improvements
-
-Before treating this as production-ready, consider adding:
-
-- Kubernetes Secrets instead of plain environment values for sensitive data.
-- Liveness and readiness probes.
-- Resource limits in addition to requests.
-- PodDisruptionBudgets.
-- TLS/HTTPS through cert-manager.
-- A production StorageClass instead of `hostPath`.
-- Centralized logging.
-- Prometheus and Grafana monitoring.
-- Distributed tracing.
-- CI/CD with GitHub Actions or Jenkins.
-- Image vulnerability scanning.
-- Non-root containers.
-- Image tags based on immutable versions/digests.
-- Private container registry where appropriate.
-- Separate namespaces/environments for dev/staging/prod.
-- Proper authentication/authorization.
-- API gateway/rate limiting where needed.
-
----
-
-# 19. Quick Start
-
-### Docker Compose
+To delete the Kind cluster:
 
 ```bash
-cp .env.example .env
-docker compose up --build
+kind delete cluster --name microservices
 ```
 
-Open:
+Verify:
+
+```bash
+kind get clusters
+```
+
+---
+
+# ☁️ AWS EC2 Deployment
+
+The project can be deployed on an AWS EC2 instance.
+
+Required EC2 configuration:
 
 ```text
-http://localhost:3001
-http://localhost:8081
-http://localhost:5001
+Security Group
+
+SSH
+TCP 22
+
+HTTP
+TCP 80
+
+HTTPS
+TCP 443
 ```
 
-### Kubernetes
+For direct NodePort access, additional ports may be required depending on the Kind configuration.
 
-```bash
-kind create cluster --config k8s/cluster.yml
+Recommended architecture:
 
-kubectl apply -f k8s/namespace.yml
-kubectl apply -f k8s/configmap.yml
-kubectl apply -f k8s/pv.yml
-kubectl apply -f k8s/pvc.yml
-kubectl apply -f k8s/deployment.yml
-kubectl apply -f k8s/service.yml
-kubectl apply -f k8s/networkpolicy.yml
-kubectl apply -f k8s/ingress.yml
-
-kubectl get pods -n microservices
-kubectl get svc -n microservices
+```text
+Internet
+    │
+    ▼
+AWS EC2
+    │
+    ▼
+NGINX Ingress
+    │
+    ▼
+Kubernetes Services
+    │
+    ▼
+Microservice Pods
 ```
 
 ---
 
-## License
+# 🎯 Learning Outcomes
 
-This project is intended for learning, experimentation, and portfolio demonstration.
+Through this project, I gained hands-on experience with:
+
+* Building polyglot microservices
+* Containerizing applications using Docker
+* Kubernetes Deployments
+* Kubernetes Services
+* Service Discovery
+* Kubernetes Namespaces
+* ConfigMaps
+* Persistent Storage
+* Kubernetes Networking
+* Network Policies
+* NGINX Ingress
+* Horizontal Pod Autoscaling
+* Vertical Pod Autoscaling
+* Kind Kubernetes Clusters
+* AWS EC2 deployment
+* Linux administration
+* Shell scripting
+* Deployment automation
+
+---
+
+# 🚀 Complete Deployment Flow
+
+```text
+Developer
+    │
+    ▼
+GitHub Repository
+    │
+    ▼
+AWS EC2
+    │
+    ▼
+git clone repository
+    │
+    ▼
+./install.sh
+    │
+    ├── Install Docker
+    ├── Install kubectl
+    └── Install Kind
+            │
+            ▼
+        ./config.sh
+            │
+            ▼
+      Create Kind Cluster
+            │
+            ▼
+ Install Kubernetes Components
+            │
+            ▼
+ Deploy Microservices
+            │
+            ▼
+ Configure Networking
+            │
+            ▼
+ Configure Autoscaling
+            │
+            ▼
+ Application Running 🚀
+```
+
+---
+
+# 🔮 Future Improvements
+
+* [ ] CI/CD pipeline using Jenkins
+* [ ] GitHub Actions integration
+* [ ] Helm Charts
+* [ ] Prometheus Monitoring
+* [ ] Grafana Dashboards
+* [ ] Centralized Logging
+* [ ] AWS Load Balancer
+* [ ] Terraform Infrastructure as Code
+* [ ] ArgoCD GitOps Deployment
+* [ ] Kubernetes Secrets Management
+
+---
+
+# 👨‍💻 Author
+
+**Sahil Suman**
+
+Cloud | DevOps | Kubernetes | AWS
+
+GitHub: https://github.com/the-sahilsuman
+
+---
+
+⭐ **If you found this project useful, consider giving it a star!**
