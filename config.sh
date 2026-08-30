@@ -7,7 +7,7 @@ set -e
 # ==========================================
 
 NAMESPACE="microservices"
-CLUSTER_NAME="kind"
+CLUSTER_NAME="microservices"
 K8S_DIR="k8s"
 
 GREEN='\033[0;32m'
@@ -122,7 +122,6 @@ else
     info "Creating Kind cluster..."
 
     kind create cluster \
-        --name "$CLUSTER_NAME" \
         --config "$K8S_DIR/cluster.yml"
 
     success "Kind cluster created successfully."
